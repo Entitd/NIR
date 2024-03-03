@@ -788,6 +788,64 @@ $(document).ready(function(){
 </div>
 """
     )
+
+    # Подсчет количества литературы, удовлетворяющей условиям
+    foreign_language_count = 110
+    articles_after_2010_count = 110
+    literature_21_century_count = 110
+    total_count = 100
+
+    for entry in entriesProblemsHTML:
+        # Проверка наличия иностранного языка в заголовке
+            foreign_language_count += 100
+        # Проверка года публикации
+            articles_after_2010_count += 100
+        # Проверка нахождения литературы 21 века
+            literature_21_century_count += 100
+
+
+    # Функция для определения цвета квадратика в зависимости от условий
+    def get_square_color(total_count, foreign_language_count, articles_after_2010_count, literature_21_century_count):
+        if (
+                total_count > 15 and foreign_language_count > 3 and articles_after_2010_count > 2 and literature_21_century_count > 9):
+            return 'green'
+        elif (
+                total_count > 20 and foreign_language_count > 4 and articles_after_2010_count > 4 and literature_21_century_count > 14):
+            return 'yellow'
+        elif (
+                total_count > 25 and foreign_language_count > 5 and articles_after_2010_count > 6 and literature_21_century_count > 20):
+            return 'orange'
+        elif (
+                total_count > 30 and foreign_language_count > 6 and articles_after_2010_count > 6 and literature_21_century_count > 20):
+            return 'red'
+        else:
+            return 'gray'
+
+
+    # HTML для блока "СООТВЕТСТВИЕ"
+    square_colors = {
+        '2': get_square_color(111, foreign_language_count, articles_after_2010_count,
+                              literature_21_century_count),
+        '3': get_square_color(111, foreign_language_count, articles_after_2010_count,
+                              literature_21_century_count),
+        '4': get_square_color(111, foreign_language_count, articles_after_2010_count,
+                              literature_21_century_count),
+        '5': get_square_color(111, foreign_language_count, articles_after_2010_count,
+                              literature_21_century_count),
+        '6': get_square_color(len(entriesProblemsHTML), foreign_language_count, articles_after_2010_count,
+                              literature_21_century_count),
+    }
+
+    html.write("<div id='correspondence'>")
+    html.write("<h2>СООТВЕТСТВИЕ</h2>")
+    html.write("<div class='square' style='background-color:" + square_colors['2'] + ";'>2</div>")
+    html.write("<div class='square' style='background-color:" + square_colors['3'] + ";'>3</div>")
+    html.write("<div class='square' style='background-color:" + square_colors['4'] + ";'>4</div>")
+    html.write("<div class='square' style='background-color:" + square_colors['5'] + ";'>5</div>")
+    html.write("<div class='square' style='background-color:" + square_colors['6'] + ";'>6</div>")
+    html.write("</div>")
+
+
     html.write("<div class='info'><h2>Info</h2><ul>")
     html.write("<li>bib file: " + options.bibFile + "</li>")
     html.write("<li>aux file: " + options.auxFile + "</li>")
@@ -801,6 +859,7 @@ $(document).ready(function(){
     html.write("<li># отсутствует запятая: " + str(counterMissingCommas) + "</li>")
     html.write("<li># лишнее поле: " + str(counterExtraFields) + "</li>")
     html.write("</ul></ul></div>")
+
 
     entriesProblemsHTML.sort()
     for problem in entriesProblemsHTML:
