@@ -29,7 +29,7 @@ libraries = [
 
 # fields that are required for a specific type of entry
 requiredEntryFields = {
-    "article": ["author", "title", "journal", "year", "volume", "number", "pages", "hyphenation"],
+    "article": ["author", "title", "journal", "year"],
     "book": ["author", "title", "year"],
     "mvbook": "book",
     "inbook": ["author", "title", "booktitle", "year"],
@@ -39,15 +39,16 @@ requiredEntryFields = {
     "collection": ["editor", "title", "year"],
     "mvcollection": "collection",
     "incollection": ["author", "title", "booktitle", "year"],
-    "manual": ["organization", "title", "year"],
+    "suppcollection": "incollection",
+    "manual": ["author", "title", "year"],
     "misc": ["author", "title", "year"],
-    "online": ["author", "title", "urldate", "url"],
+    "online": ["author", "title", "year", "url"],
     "patent": ["author", "title", "number", "year"],
     "periodical": ["editor", "title", "year"],
     "suppperiodical": "article",
     "proceedings": ["title", "year"],
     "mvproceedings": "proceedings",
-    "inproceedings": ["author", "title", "booktitle", "year", "pages", "publisher", "address"],
+    "inproceedings": ["author", "title", "booktitle", "year"],
     "reference": "collection",
     "mvreference": "collection",
     "inreference": "incollection",
@@ -78,8 +79,8 @@ from optparse import OptionParser
 ### Parse Args ###
 
 usage = (
-    sys.argv[0]
-    + " [-b|--bib=<input.bib>] [-a|--aux=<input.aux>] [-o|--output=<output.html>] [-v|--view] [-h|--help]"
+        sys.argv[0]
+        + " [-b|--bib=<input.bib>] [-a|--aux=<input.aux>] [-o|--output=<output.html>] [-v|--view] [-h|--help]"
 )
 
 parser = OptionParser(usage)
@@ -134,15 +135,16 @@ else:
     reload(sys)
     sys.setdefaultencoding("utf8")
 
+
     def open(
-        file,
-        mode="r",
-        buffering=-1,
-        encoding=None,
-        errors=None,
-        newline=None,
-        closefd=True,
-        opener=None,
+            file,
+            mode="r",
+            buffering=-1,
+            encoding=None,
+            errors=None,
+            newline=None,
+            closefd=True,
+            opener=None,
     ):
         if newline is not None:
             warnings.warn("newline is not supported in py2")
@@ -157,7 +159,6 @@ else:
             errors=errors,
             buffering=buffering,
         )
-
 
 ### Handle Args ###
 
@@ -217,7 +218,7 @@ def resolveAliasedRequiredFields(entryRequiredFields, requiredFieldsDict):
 
 
 def generateEntryProblemsHTML(
-    itemHTML, itemId, type, articleId, title, problems, author, lineNumber
+        itemHTML, itemId, type, articleId, title, problems, author, lineNumber
 ):
     cleanedTitle = title.translate(removePunctuationMap)
     html = "<div id='" + itemId + "' class='problem severe" + str(len(problems)) + "'>"
@@ -225,10 +226,10 @@ def generateEntryProblemsHTML(
     html += "<div class='links'>"
     if citeulikeUsername:
         html += (
-            "<a href='"
-            + citeulikeHref
-            + articleId
-            + "' target='_blank'>CiteULike</a> |"
+                "<a href='"
+                + citeulikeHref
+                + articleId
+                + "' target='_blank'>CiteULike</a> |"
         )
 
     librariesList = []
@@ -280,8 +281,10 @@ counterMissingFields = 0
 counterNonUniqueId = 0
 counterWrongFieldNames = 0
 counterWrongTypes = 0
+counterExtraFields = 0  # счетчик лишних полей#
 
 lastLine = 0
+
 
 ### Global Abusing Handlers ###
 
@@ -309,16 +312,18 @@ def handleNewEntryStarting(line):
     entryHTML = line + "<br />"
 
 
-def handleEntryEnding(lineNumber, line, counterMissingFields):
+def handleEntryEnding(lineNumber, line):
     global entryArticleId, entryAuthor, entryFields, entryHTML, entryId, entryProblems, entryTitle, entryType
-    global counterMissingCommas, counterNonUniqueId
+    global counterMissingFields, counterMissingCommas, removePunctuationMap
+    global entriesProblemsHTML
+    global lastLine
 
-    # Последняя строка записи может не иметь запятой в конце
+    # Last line of entry is allowed to have missing comma
     if lastLine == lineNumber - 1:
         entryProblems = entryProblems[:-1]
         counterMissingCommas -= 1
 
-    # Поддержка типов-алиасов
+    # Support for type aliases
     entryFields = list(map(
         lambda typeName: fieldAliases.get(typeName)
         if typeName in fieldAliases
@@ -334,34 +339,21 @@ def handleEntryEnding(lineNumber, line, counterMissingFields):
             entryRequiredFields, requiredEntryFields
         )
 
-        # Проверка наличия всех обязательных полей
         for requiredEntryField in entryRequiredFields:
-            # Поддержка синтаксиса автора/редактора
+            # support for author/editor syntax
             requiredEntryField = requiredEntryField.split("/")
-            # Если хотя бы одно из обязательных полей отсутствует
+
+            # at least one the required fields is not found
             if set(requiredEntryField).isdisjoint(entryFields):
                 entryProblems.append(
-                    "отсутствует поле '" + "/".join(requiredEntryField) + "'"
+                    "missing field '" + "/".join(requiredEntryField) + "'"
                 )
-
-        # Проверка наличия лишних полей
-        extra_fields = set(entryFields) - set(entryRequiredFields)
-        if extra_fields:
-            # Исключаем из сравнения пустые поля и комментарии
-            extra_fields = {f for f in extra_fields if f and not f.startswith('%')}
-            # Убираем алиасы из лишних полей
-            extra_fields_without_aliases = set(fieldAliases.get(field, field) for field in extra_fields)
-            if not extra_fields_without_aliases.issubset(set(entryRequiredFields)):
-                entryProblems.append(
-                    "лишние поля: '" + "', '".join(extra_fields) + "'"
-                )
+                counterMissingFields += 1
 
     else:
         entryProblems = []
 
-    # Проверяем, есть ли проблемы в записи
-    if entryProblems:
-        # Если есть проблемы, создаем HTML для этой записи
+    if entryId in usedIds or (entryId and not usedIds):
         entryProblemsHTML = generateEntryProblemsHTML(
             entryHTML,
             entryId,
@@ -372,12 +364,8 @@ def handleEntryEnding(lineNumber, line, counterMissingFields):
             entryAuthor,
             lineNumber,
         )
-        # Добавляем HTML записи в список проблемных записей
         entriesProblemsHTML.append(entryProblemsHTML)
-    return counterMissingFields
-    return counterExtraFields
 
-counterExtraFields = 0
 
 def handleEntryLine(lineNumber, line):
     global entryHTML, entryId
@@ -390,6 +378,7 @@ def handleEntryLine(lineNumber, line):
         if "=" in line:
             handleEntryField(lineNumber, line)
 
+
 def detect_language(text):
     # Проверка наличия русских символов в тексте
     for char in text:
@@ -397,9 +386,10 @@ def detect_language(text):
             return 'russian'
     return 'english'
 
+
 def handleEntryField(lineNumber, line):
     global entryArticleId, entryAuthor, entryFields, entryHTML, entryId, entryProblems, entryTitle, entryType
-    global counterFlawedNames, counterWrongTypes, counterWrongFieldNames, counterMissingCommas
+    global counterFlawedNames, counterWrongTypes, counterWrongFieldNames, counterMissingCommas, counterExtraFields
     global lastLine
 
     if line.strip().startswith("%"):
@@ -439,11 +429,11 @@ def handleEntryField(lineNumber, line):
             elif len(comp) == 2:
                 if comp[0].strip() == "":
                     entryProblems.append(
-                        "отсутствует фамилия автора в поле 'author'"
+                        "last name of an author in field 'author' empty"
                     )
                 if comp[1].strip() == "":
                     entryProblems.append(
-                        "отсутствует имя автора в поле 'author'"
+                        "first name of an author in field 'author' empty"
                     )
 
     elif fieldName == "citeulike-article-id":
@@ -459,7 +449,7 @@ def handleEntryField(lineNumber, line):
     # check if type 'proceedings' might be 'inproceedings'
     elif entryType == "proceedings" and fieldName == "pages":
         entryProblems.append(
-            "неправильный тип: возможно, должно быть 'inproceedings', поскольку запись имеет номера страниц"
+            "wrong type: maybe should be 'inproceedings' because entry has page numbers"
         )
         counterWrongTypes += 1
 
@@ -467,7 +457,7 @@ def handleEntryField(lineNumber, line):
     elif entryType == "article" and fieldName in ("journal", "journaltitle"):
         if "." in line:
             entryProblems.append(
-                "ошибочное название: сокращенное название журнала '" + fieldValue + "'"
+                "flawed name: abbreviated journal title '" + fieldValue + "'"
             )
             counterFlawedNames += 1
 
@@ -488,24 +478,30 @@ def handleEntryField(lineNumber, line):
 
     # check for commas at end of line
     if line[-1] != ",":
-        entryProblems.append(
-            "отсутствует запятая в конце строки, в '" + fieldName + "'."
-        )
         counterMissingCommas += 1
+        entryProblems.append(
+            "missing comma at end of line, at '" + fieldName + "' field definition."
+        )
         lastLine = lineNumber
+
+    # Проверяем наличие лишних полей
+    if fieldName not in requiredEntryFields.get(entryType.lower(), []):
+        entryProblems.append("лишнее поле '" + fieldName + "'")
+        counterExtraFields += 1
+
 
 ### Parse input file ###
 
 for (bibLineNumber, bibLine) in enumerate(fIn):
     bibLine = bibLine.strip("\n")
 
-    # Staring a new entry
+    # Starting a new entry
     if bibLine.startswith("@"):
         handleNewEntryStarting(bibLine)
 
     # Closing out the current entry
     elif bibLine.startswith("}"):
-        counterExtraFields = handleEntryEnding(bibLineNumber, bibLine, counterExtraFields)
+        handleEntryEnding(bibLineNumber, bibLine)
 
     else:
         handleEntryLine(bibLineNumber, bibLine)
@@ -513,12 +509,13 @@ for (bibLineNumber, bibLine) in enumerate(fIn):
 fIn.close()
 
 problemCount = (
-    counterMissingFields
-    + counterFlawedNames
-    + counterWrongFieldNames
-    + counterWrongTypes
-    + counterNonUniqueId
-    + counterMissingCommas
+        counterMissingFields
+        + counterFlawedNames
+        + counterWrongFieldNames
+        + counterWrongTypes
+        + counterNonUniqueId
+        + counterMissingCommas
+        + counterExtraFields
 )
 
 # Write out our HTML file
@@ -770,21 +767,21 @@ $(document).ready(function(){
 <div id="title">
 <h1><a href='http://github.com/pezmc/BibLatex-Check'>BibLaTeX Check</a></h1>
 <div id="control">
-<form id="search"><input placeholder="найти по ID ..."/></form>
+<form id="search"><input placeholder="search entry ID ..."/></form>
 <form id="mode">
-<label>показать записи:</label>
+<label>show entries:</label>
 <input type = "radio"
                  name = "mode"
                  id = "mode_problems"
-                 value = "с проблемами"
+                 value = "problems"
                  checked = "checked" />
           <label for = "mode_problems">problems</label>
           <input type = "radio"
                  name = "mode"
                  id = "mode_all"
-                 value = "все" />
+                 value = "all" />
           <label for = "mode_all">all</label>
-<input type="button" value="снять все" id="uncheck_button"></button>
+<input type="button" value="uncheck all" id="uncheck_button"></button>
 </form>
 <br style="clear: both; " />
 </div>
@@ -794,15 +791,15 @@ $(document).ready(function(){
     html.write("<div class='info'><h2>Info</h2><ul>")
     html.write("<li>bib file: " + options.bibFile + "</li>")
     html.write("<li>aux file: " + options.auxFile + "</li>")
-    html.write("<li># записи с ошибками: " + str(len(entriesProblemsHTML)) + "</li>")
-    html.write("<li># проблемы: " + str(problemCount) + "</li><ul>")
-    html.write("<li># недостающие поля: " + str(counterMissingFields) + "</li>")
-    html.write("<li># ошибочные имена: " + str(counterFlawedNames) + "</li>")
+    html.write("<li># записей с ошибками: " + str(len(entriesProblemsHTML)) + "</li>")
+    html.write("<li># проблем: " + str(problemCount) + "</li><ul>")
+    html.write("<li># отстутвующие поля: " + str(counterMissingFields) + "</li>")
+    html.write("<li># ошибочные имиена: " + str(counterFlawedNames) + "</li>")
     html.write("<li># неправильные типы: " + str(counterWrongTypes) + "</li>")
-    html.write("<li># неуникальный идентификатор: " + str(counterNonUniqueId) + "</li>")
+    html.write("<li># неуникальный идентитификатор: " + str(counterNonUniqueId) + "</li>")
     html.write("<li># неправильное поле: " + str(counterWrongFieldNames) + "</li>")
     html.write("<li># отсутствует запятая: " + str(counterMissingCommas) + "</li>")
-    html.write("<li># лишние поля: " + str(counterExtraFields) + "</li>")
+    html.write("<li># лишнее поле: " + str(counterExtraFields) + "</li>")
     html.write("</ul></ul></div>")
 
     entriesProblemsHTML.sort()
