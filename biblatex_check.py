@@ -285,6 +285,11 @@ counterExtraFields = 0  # счетчик лишних полей#
 
 lastLine = 0
 
+foreign_language_count = 0
+articles_after_2010_count = 0
+literature_21_century_count = 0
+total_count = 0
+
 
 ### Global Abusing Handlers ###
 
@@ -390,7 +395,8 @@ def detect_language(text):
 def handleEntryField(lineNumber, line):
     global entryArticleId, entryAuthor, entryFields, entryHTML, entryId, entryProblems, entryTitle, entryType
     global counterFlawedNames, counterWrongTypes, counterWrongFieldNames, counterMissingCommas, counterExtraFields
-    global lastLine
+    global lastLine, foreign_language_count, articles_after_2010_count, literature_21_century_count, total_count
+
 
     if line.strip().startswith("%"):
         # Игнорируем строки, начинающиеся с символа '%'
@@ -402,10 +408,13 @@ def handleEntryField(lineNumber, line):
     entryFields.append(fieldName)
 
     if fieldName == "title":
+        total_count += 1
         entryTitle = re.sub(r"\}|\{", r"", fieldValue)
         # Проверка языка заголовка
         language = detect_language(entryTitle)
         if language == 'english':
+            # Прибавляю к англоязычным статьям
+            foreign_language_count +=1
             # Если статья англоязычная, проверяем наличие тома и страниц
             if "article" in entryType.lower():
                 if "volume" not in entryFields:
@@ -435,6 +444,13 @@ def handleEntryField(lineNumber, line):
                     entryProblems.append(
                         "first name of an author in field 'author' empty"
                     )
+
+    if fieldName == "year":
+        year_value = int(fieldValue)
+        if year_value > 2010:
+            articles_after_2010_count += 1
+        if year_value >= 2001:
+            literature_21_century_count  += 1
 
     elif fieldName == "citeulike-article-id":
         entryArticleId = fieldValue
@@ -488,7 +504,6 @@ def handleEntryField(lineNumber, line):
     if fieldName not in requiredEntryFields.get(entryType.lower(), []):
         entryProblems.append("лишнее поле '" + fieldName + "'")
         counterExtraFields += 1
-
 
 ### Parse input file ###
 
@@ -789,50 +804,35 @@ $(document).ready(function(){
 """
     )
 
-    # Подсчет количества литературы, удовлетворяющей условиям
-    foreign_language_count = 110
-    articles_after_2010_count = 110
-    literature_21_century_count = 110
-    total_count = 100
-
-    for entry in entriesProblemsHTML:
-        # Проверка наличия иностранного языка в заголовке
-            foreign_language_count += 100
-        # Проверка года публикации
-            articles_after_2010_count += 100
-        # Проверка нахождения литературы 21 века
-            literature_21_century_count += 100
-
-
     # Функция для определения цвета квадратика в зависимости от условий
     def get_square_color(total_count, foreign_language_count, articles_after_2010_count, literature_21_century_count):
         if (
-                total_count > 15 and foreign_language_count > 3 and articles_after_2010_count > 2 and literature_21_century_count > 9):
-            return 'green'
-        elif (
-                total_count > 20 and foreign_language_count > 4 and articles_after_2010_count > 4 and literature_21_century_count > 14):
-            return 'yellow'
+                total_count > 30 and foreign_language_count > 6 and articles_after_2010_count > 6 and literature_21_century_count > 20):
+            return 'red'
         elif (
                 total_count > 25 and foreign_language_count > 5 and articles_after_2010_count > 6 and literature_21_century_count > 20):
             return 'orange'
         elif (
-                total_count > 30 and foreign_language_count > 6 and articles_after_2010_count > 6 and literature_21_century_count > 20):
-            return 'red'
+                total_count > 20 and foreign_language_count > 4 and articles_after_2010_count > 4 and literature_21_century_count > 14):
+            return 'yellow'
+        elif (
+                total_count > 15 and foreign_language_count > 3 and articles_after_2010_count > 2 and literature_21_century_count > 9):
+            return 'green'
         else:
             return 'gray'
 
 
     # HTML для блока "СООТВЕТСТВИЕ"
     square_colors = {
-        '2': get_square_color(111, foreign_language_count, articles_after_2010_count,
+        '2': get_square_color(total_count, foreign_language_count, articles_after_2010_count,
                               literature_21_century_count),
-        '3': get_square_color(111, foreign_language_count, articles_after_2010_count,
+        '3': get_square_color(total_count, foreign_language_count, articles_after_2010_count,
                               literature_21_century_count),
-        '4': get_square_color(111, foreign_language_count, articles_after_2010_count,
+        '4': get_square_color(total_count, foreign_language_count, articles_after_2010_count,
                               literature_21_century_count),
-        '5': get_square_color(111, foreign_language_count, articles_after_2010_count,
+        '5': get_square_color(total_count, foreign_language_count, articles_after_2010_count,
                               literature_21_century_count),
-        '6': get_square_color(len(entriesProblemsHTML), foreign_language_count, articles_after_2010_count,
+        '6': get_square_color(total_count, foreign_language_count, articles_after_2010_count,
                               literature_21_century_count),
     }
 
