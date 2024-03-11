@@ -447,8 +447,9 @@ def handleEntryField(lineNumber, line):
 
     if fieldName == "year":
         year_value = int(fieldValue)
-        if year_value > 2010:
-            articles_after_2010_count += 1
+        if entryType.lower() == "article":
+            if year_value > 2010:
+                articles_after_2010_count += 1
         if year_value >= 2001:
             literature_21_century_count  += 1
 
