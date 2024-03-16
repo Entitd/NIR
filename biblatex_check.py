@@ -403,6 +403,8 @@ def handleEntryField(lineNumber, line):
     global counterFlawedNames, counterWrongTypes, counterWrongFieldNames, counterMissingCommas, counterExtraFields
     global lastLine, foreign_language_count, articles_after_2010_count, literature_21_century_count, total_count
 
+    # Получаем номер строки, на которой произошла ошибка
+    line_number_info = "на строке " + str(lineNumber + 1)
 
     if line.strip().startswith("%"):
         # Игнорируем строки, начинающиеся с символа '%'
@@ -420,13 +422,13 @@ def handleEntryField(lineNumber, line):
         language = detect_language(entryTitle)
         if language == 'english':
             # Прибавляю к англоязычным статьям
-            foreign_language_count +=1
+            foreign_language_count += 1
             # Если статья англоязычная, проверяем наличие тома и страниц
             if "article" in entryType.lower():
                 if "volume" not in entryFields:
-                    entryProblems.append("отсутствует поле 'volume' в английской статье")
+                    entryProblems.append("отсутствует поле 'volume' в английской статье " + line_number_info)
                 if "pages" not in entryFields:
-                    entryProblems.append("отсутствует поле 'pages' в английской статье")
+                    entryProblems.append("отсутствует поле 'pages' в английской статье " + line_number_info)
 
     # Checks per field type
     if fieldName == "author":
@@ -435,20 +437,20 @@ def handleEntryField(lineNumber, line):
             comp = author.split(",")
             if len(comp) == 0:
                 entryProblems.append(
-                    "too little name components for an author in field 'author'"
+                    "too little name components for an author in field 'author' " + line_number_info
                 )
             elif len(comp) > 2:
                 entryProblems.append(
-                    "too many name components for an author in field 'author'"
+                    "too many name components for an author in field 'author' " + line_number_info
                 )
             elif len(comp) == 2:
                 if comp[0].strip() == "":
                     entryProblems.append(
-                        "last name of an author in field 'author' empty"
+                        "last name of an author in field 'author' empty " + line_number_info
                     )
                 if comp[1].strip() == "":
                     entryProblems.append(
-                        "first name of an author in field 'author' empty"
+                        "first name of an author in field 'author' empty " + line_number_info
                     )
 
     if fieldName == "year":
@@ -457,7 +459,7 @@ def handleEntryField(lineNumber, line):
             if year_value > 2010:
                 articles_after_2010_count += 1
         if year_value >= 2001:
-            literature_21_century_count  += 1
+            literature_21_century_count += 1
 
     elif fieldName == "citeulike-article-id":
         entryArticleId = fieldValue
@@ -472,7 +474,7 @@ def handleEntryField(lineNumber, line):
     # check if type 'proceedings' might be 'inproceedings'
     elif entryType == "proceedings" and fieldName == "pages":
         entryProblems.append(
-            "wrong type: maybe should be 'inproceedings' because entry has page numbers"
+            "wrong type: maybe should be 'inproceedings' because entry has page numbers " + line_number_info
         )
         counterWrongTypes += 1
 
@@ -480,39 +482,23 @@ def handleEntryField(lineNumber, line):
     elif entryType == "article" and fieldName in ("journal", "journaltitle"):
         if "." in line:
             entryProblems.append(
-                "flawed name: abbreviated journal title '" + fieldValue + "'"
+                "flawed name: abbreviated journal title '" + fieldValue + "' " + line_number_info
             )
             counterFlawedNames += 1
-
-    # check booktitle format; expected format "ICBAB '13: Proceeding of the 13th International Conference on Bla and Blubb"
-    # if entryType == "inproceedings" and fieldName == "booktitle":
-    # if ":" not in line or ("Proceedings" not in line and "Companion" not in line) or "." in line or " '" not in line or "workshop" in line or "conference" in line or "symposium" in line:
-    # entryProblems.append("flawed name: inconsistent formatting of booktitle '"+fieldValue+"'")
-    # counterFlawedNames += 1
-
-    # check if title is capitalized (heuristic)
-    # if fieldName == "title":
-    # for word in entryTitle.split(" "):
-    # word = word.strip(":")
-    # if len(word) > 7 and word[0].islower() and not  "-" in word and not "_"  in word and not "[" in word:
-    # entryProblems.append("flawed name: non-capitalized title '"+entryTitle+"'")
-    # counterFlawedNames += 1
-    # break
 
     # check for commas at end of line
     if line[-1] != ",":
         counterMissingCommas += 1
         entryProblems.append(
-            "missing comma at end of line, at '" + fieldName + "' field definition."
+            "missing comma at end of line, at '" + fieldName + "' field definition. " + line_number_info
         )
         lastLine = lineNumber
 
     # Проверяем наличие лишних полей
     if fieldName not in requiredEntryFields.get(entryType.lower(), []):
-        entryProblems.append("лишнее поле '" + fieldName + "'")
+        entryProblems.append("лишнее поле '" + fieldName + "' " + line_number_info)
         counterExtraFields += 1
 
-### Parse input file ###
 
 for (bibLineNumber, bibLine) in enumerate(fIn):
     bibLine = bibLine.strip("\n")
@@ -553,13 +539,13 @@ if options.htmlOutput:
 body {
     font-family: Calibri, Arial, Sans;
     padding: 10px;
-    width: 1030px;
+    width: 1000px;
     margin: 10px auto;
     border-top: 1px solid black;
 }
 
 #title {
-    width: 720px;
+    width: 700px;
     border-bottom: 1px solid black;
 }
 
@@ -602,9 +588,11 @@ body {
     padding: 10px;
     background: #FAFADD;
     width: 250px;
-    float: right;
+    float: left;
     box-shadow: 1px 1px 1px 1px #ccc;
     clear: both;
+    position: relative;
+    left: 620px
 }
 
 .info h2 {
@@ -614,7 +602,17 @@ body {
 }
 
 .correspondence {
-
+    margin-top: 10px;
+    padding: 10px;
+    background: #FAFADD;
+    width: 250px;
+    float: left;
+    box-shadow: 1px 1px 1px 1px #ccc;
+    clear: both;
+    margin-right: 1px;
+    position: relative;
+    bottom: 315px;
+    left: 910px
 }
 
 .square {
@@ -631,15 +629,19 @@ body {
 
 .problem {
     margin-top: 10px;
+    margin-left: 10px;
     margin-bottom: 10px;
     padding: 10px;
     background: #FFBBAA;
     counter-increment: problem;
-    width: 700px;
+    width: 600px;
     border: 1px solid #993333;
     border-left: 5px solid #993333;
     box-shadow: 1px 1px 1px 1px #ccc;
-    float: left;
+    float: right;
+    position: relative;
+    bottom: 315px;
+    right: 400px
 }
 
 .active {
@@ -868,6 +870,7 @@ $(document).ready(function(){
     html.write("<li># отсутствует запятая: " + str(counterMissingCommas) + "</li>")
     html.write("<li># лишнее поле: " + str(counterExtraFields) + "</li>")
     html.write("</ul>")
+    html.write("</div>")
     html.write("<div id='correspondence' class='correspondence'>")
     html.write("<h2>СООТВЕТСТВИЕ</h2>")
     html.write("<div class='square' style='background-color:" + square_colors['2'] + ";'>2</div>")
@@ -875,7 +878,7 @@ $(document).ready(function(){
     html.write("<div class='square' style='background-color:" + square_colors['4'] + ";'>4</div>")
     html.write("<div class='square' style='background-color:" + square_colors['5'] + ";'>5</div>")
     html.write("<div class='square' style='background-color:" + square_colors['6'] + ";'>6</div>")
-    html.write("</div>")
+
     #вывод для 2 курса
     if (total_count < (total_count_for_func + 16) or
         foreign_language_count < ( foreign_language_count_for_func + 4 ) or
