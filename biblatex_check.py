@@ -405,6 +405,8 @@ def validate_author_field(author_field):
             return False
         if not all(part[0].isupper() and len(part) > 1 for part in parts):
             return False
+        if ", " not in author:
+            return False
     return True
 
 def handleEntryField(lineNumber, line):
