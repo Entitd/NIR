@@ -397,6 +397,15 @@ def detect_language(text):
             return 'russian'
     return 'english'
 
+def validate_author_field(author_field):
+    authors = author_field.split(" and ")
+    for author in authors:
+        parts = author.strip().split()
+        if len(parts) != 3:
+            return False
+        if not all(part[0].isupper() and len(part) > 1 for part in parts):
+            return False
+    return True
 
 def handleEntryField(lineNumber, line):
     global entryArticleId, entryAuthor, entryFields, entryHTML, entryId, entryProblems, entryTitle, entryType
@@ -430,28 +439,7 @@ def handleEntryField(lineNumber, line):
                 if "pages" not in entryFields:
                     entryProblems.append("отсутствует поле 'pages' в английской статье " + line_number_info)
 
-    # Checks per field type
-    if fieldName == "author":
-        entryAuthor = "".join(filter(lambda x: not (x in '\\"{}'), fieldValue.split(" and ")[0]))
-        for author in fieldValue.split(" and "):
-            comp = author.split(",")
-            if len(comp) == 0:
-                entryProblems.append(
-                    "too little name components for an author in field 'author' " + line_number_info
-                )
-            elif len(comp) > 2:
-                entryProblems.append(
-                    "too many name components for an author in field 'author' " + line_number_info
-                )
-            elif len(comp) == 2:
-                if comp[0].strip() == "":
-                    entryProblems.append(
-                        "last name of an author in field 'author' empty " + line_number_info
-                    )
-                if comp[1].strip() == "":
-                    entryProblems.append(
-                        "first name of an author in field 'author' empty " + line_number_info
-                    )
+    
 
     if fieldName == "year":
         year_value = int(fieldValue)
@@ -499,10 +487,13 @@ def handleEntryField(lineNumber, line):
         entryProblems.append("лишнее поле '" + fieldName + "' " + line_number_info)
         counterExtraFields += 1
 
-
+    if fieldName == "author":
+        if not validate_author_field(fieldValue):
+            entryProblems.append("неправильный формат автора '" + fieldValue + "' " + line_number_info)
+            
 for (bibLineNumber, bibLine) in enumerate(fIn):
     bibLine = bibLine.strip("\n")
-
+    bibLine = bibLine.strip()
     # Starting a new entry
     if bibLine.startswith("@"):
         handleNewEntryStarting(bibLine)
