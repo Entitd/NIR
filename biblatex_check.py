@@ -609,8 +609,8 @@ body {
 }
 
 .square {
-    width: 50px;
-    height: 50px;
+    width: 40px;
+    height: 40px;
     margin-right: 10px;
     margin-bottom: 10px;
     font-size: 20px;
@@ -829,18 +829,18 @@ $(document).ready(function(){
         if (
                 (
                         gg == 5 or gg == 6) and total_count > 30 and foreign_language_count > 6 and articles_after_2010_count > 6 and literature_21_century_count > 20):
-            return 'red'
+            return 'green'
         if (
                 gg == 4 and total_count > 25 and foreign_language_count > 5 and articles_after_2010_count > 6 and literature_21_century_count > 20):
-            return 'orange'
+            return 'green'
         if (
                 gg == 3 and total_count > 20 and foreign_language_count > 4 and articles_after_2010_count > 4 and literature_21_century_count > 14):
-            return 'yellow'
+            return 'green'
         if (
                 gg == 2 and total_count > 15 and foreign_language_count > 3 and articles_after_2010_count > 2 and literature_21_century_count > 9):
             return 'green'
         else:
-            return 'gray'
+            return 'red'
 
 
     # HTML для блока "СООТВЕТСТВИЕ"
@@ -879,13 +879,12 @@ $(document).ready(function(){
     html.write("<div class='square' style='background-color:" + square_colors['5'] + ";'>5</div>")
     html.write("<div class='square' style='background-color:" + square_colors['6'] + ";'>6</div>")
 
-    # вывод для 2 курса
     if (total_count < (total_count_for_func + 16) or
             foreign_language_count < (foreign_language_count_for_func + 4) or
             articles_after_2010_count < (articles_after_2010_count_for_func + 3) or
             literature_21_century_count < (literature_21_century_count_for_func + 10)):
 
-        html.write("</ul><li># Недостающее для 2 курса:</li><ul>")
+        html.write("<details><summary>Недостающее для 2 курса:</summary><ul>")
 
         if (total_count < (total_count_for_func + 16)):
             number_for_func = ((total_count_for_func + 16) - total_count)
@@ -903,13 +902,15 @@ $(document).ready(function(){
             number_for_func = ((literature_21_century_count_for_func + 10) - literature_21_century_count)
             html.write("<li># Недостает 21 века:" + str(number_for_func) + "</li>")
 
+        html.write("</details>")
+    
     # вывод для 3 курса
     if (total_count < (total_count_for_func + 21) or
             foreign_language_count < (foreign_language_count_for_func + 5) or
             articles_after_2010_count < (articles_after_2010_count_for_func + 5) or
             literature_21_century_count < (literature_21_century_count_for_func + 15)):
 
-        html.write("</ul><li># Недостающее для 3 курса:</li><ul>")
+        html.write("<details><summary>Недостающее для 3 курса:</summary><ul>")
 
         if (total_count < (total_count_for_func + 21)):
             number_for_func = ((total_count_for_func + 21) - total_count)
@@ -927,13 +928,15 @@ $(document).ready(function(){
             number_for_func = ((literature_21_century_count_for_func + 15) - literature_21_century_count)
             html.write("<li># Недостает 21 века:" + str(number_for_func) + "</li>")
 
+        html.write("</details>")
+
     # вывод для 4 курса
     if (total_count < (total_count_for_func + 26) or
             foreign_language_count < (foreign_language_count_for_func + 6) or
             articles_after_2010_count < (articles_after_2010_count_for_func + 7) or
             literature_21_century_count < (literature_21_century_count_for_func + 21)):
 
-        html.write("</ul><li># Недостающее для 4 курса:</li><ul>")
+        html.write("<details><summary>Недостающее для 4 курса:</summary><ul>")
 
         if (total_count < (total_count_for_func + 26)):
             number_for_func = ((total_count_for_func + 26) - total_count)
@@ -950,14 +953,14 @@ $(document).ready(function(){
         if (literature_21_century_count < (literature_21_century_count_for_func + 21)):
             number_for_func = ((literature_21_century_count_for_func + 21) - literature_21_century_count)
             html.write("<li># Недостает 21 века:" + str(number_for_func) + "</li>")
-
+        html.write("</details>")
     # вывод для 5 курса
     if (total_count < (total_count_for_func + 31) or
             foreign_language_count < (foreign_language_count_for_func + 7) or
             articles_after_2010_count < (articles_after_2010_count_for_func + 7) or
             literature_21_century_count < (literature_21_century_count_for_func + 21)):
 
-        html.write("</ul><li># Недостающее для 5 курса:</li><ul>")
+        html.write("<details><summary>Недостающее для 5 курса:</summary><ul>")
 
         if (total_count < (total_count_for_func + 31)):
             number_for_func = ((total_count_for_func + 31) - total_count)
@@ -974,14 +977,14 @@ $(document).ready(function(){
         if (literature_21_century_count < (literature_21_century_count_for_func + 21)):
             number_for_func = ((literature_21_century_count_for_func + 21) - literature_21_century_count)
             html.write("<li># Недостает 21 века:" + str(number_for_func) + "</li>")
-
+        html.write("</details>")
     # вывод для 6 курса
     if (total_count < (total_count_for_func + 31) or
             foreign_language_count < (foreign_language_count_for_func + 7) or
             articles_after_2010_count < (articles_after_2010_count_for_func + 7) or
             literature_21_century_count < (literature_21_century_count_for_func + 21)):
 
-        html.write("</ul><li># Недостающее для 6 курса:</li><ul>")
+        html.write("<details><summary>Недостающее для 6 курса:</summary><ul>")
 
         if (total_count < (total_count_for_func + 31)):
             number_for_func = ((total_count_for_func + 31) - total_count)
@@ -998,7 +1001,7 @@ $(document).ready(function(){
         if (literature_21_century_count < (literature_21_century_count_for_func + 21)):
             number_for_func = ((literature_21_century_count_for_func + 21) - literature_21_century_count)
             html.write("<li># Недостает 21 века:" + str(number_for_func) + "</li>")
-
+        html.write("</details>")
     html.write("</ul></ul></div>")
 
     entriesProblemsHTML.sort()
