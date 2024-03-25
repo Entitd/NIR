@@ -274,6 +274,7 @@ entryId = ""
 entryProblems = []
 entryTitle = ""
 entryType = ""
+entryHyphenation = ""
 
 counterFlawedNames = 0
 counterMissingCommas = 0
@@ -282,6 +283,8 @@ counterNonUniqueId = 0
 counterWrongFieldNames = 0
 counterWrongTypes = 0
 counterExtraFields = 0  # счетчик лишних полей#
+countHyphenation = 0 # нужен для корректной проверки англ статей
+privet = 0
 
 lastLine = 0
 
@@ -326,7 +329,7 @@ def handleEntryEnding(lineNumber, line):
     global entryArticleId, entryAuthor, entryFields, entryHTML, entryId, entryProblems, entryTitle, entryType
     global counterMissingFields, counterMissingCommas, removePunctuationMap
     global entriesProblemsHTML
-    global lastLine
+    global lastLine, countHyphenation, privet
 
     # Last line of entry is allowed to have missing comma
     if lastLine == lineNumber - 1:
@@ -364,6 +367,9 @@ def handleEntryEnding(lineNumber, line):
         entryProblems = []
 
     if entryId in usedIds or (entryId and not usedIds):
+        if countHyphenation == 1 and privet == 0:
+            entryProblems.append("отсутствует поле hyphenation")
+            counterMissingFields += 1
         entryProblemsHTML = generateEntryProblemsHTML(
             entryHTML,
             entryId,
@@ -411,9 +417,10 @@ def validate_author_field(author_field):
 
 
 def handleEntryField(lineNumber, line):
-    global entryArticleId, entryAuthor, entryFields, entryHTML, entryId, entryProblems, entryTitle, entryType
+    global entryArticleId, entryAuthor, entryFields, entryHTML, entryId, entryProblems, entryTitle, entryType, entryHyphenation
     global counterFlawedNames, counterWrongTypes, counterWrongFieldNames, counterMissingCommas, counterExtraFields
-    global lastLine, foreign_language_count, articles_after_2010_count, literature_21_century_count, total_count
+    global lastLine, foreign_language_count, articles_after_2010_count, literature_21_century_count, total_count, countHyphenation
+    global privet
 
     # Получаем номер строки, на которой произошла ошибка
     line_number_info = "на строке " + str(lineNumber + 1)
@@ -435,13 +442,13 @@ def handleEntryField(lineNumber, line):
         if language == 'english':
             # Прибавляю к англоязычным статьям
             foreign_language_count += 1
-            # Если статья англоязычная, проверяем наличие тома и страниц
+            # Если статья англоязычная, проверяем наличие поля hyphenation
             if "article" in entryType.lower():
-                if "volume" not in entryFields:
-                    entryProblems.append("отсутствует поле 'volume' в английской статье " + line_number_info)
-                if "pages" not in entryFields:
-                    entryProblems.append("отсутствует поле 'pages' в английской статье " + line_number_info)
+                countHyphenation += 1
+            #    if "hyphenation" not in entryFields:
 
+                   # entryProblems.append("отсутствует поле 'hyphenation = eng' в английской статье " )
+            
     if fieldName == "year":
         year_value = int(fieldValue)
         if entryType.lower() == "article":
@@ -484,14 +491,27 @@ def handleEntryField(lineNumber, line):
         lastLine = lineNumber
 
     # Проверяем наличие лишних полей
+
     if fieldName not in requiredEntryFields.get(entryType.lower(), []):
-        entryProblems.append("лишнее поле '" + fieldName + "' " + line_number_info)
-        counterExtraFields += 1
+        if countHyphenation == 0:
+            entryProblems.append("лишнее поле '" + fieldName + "' " + line_number_info)
+            counterExtraFields += 1
+        else:
+            if fieldName == "hyphenation" and fieldValue != "english":
+                entryProblems.append("поле '" + fieldName + "' должно быть english")
+                countHyphenation -= 1
+                privet = 1
+            if fieldName != "hyphenation":
+                entryProblems.append("лишнее поле '" + fieldName + "' " + line_number_info)
+                counterExtraFields += 1
+    # if (countHyphenation == 1 and privet !):
+    #     entryProblems.append("Недостает поля  hyphenation")
+
+
 
     if fieldName == "author":
         if not validate_author_field(fieldValue):
             entryProblems.append("неправильный формат автора '" + fieldValue + "' " + line_number_info)
-
 
 for (bibLineNumber, bibLine) in enumerate(fIn):
     bibLine = bibLine.strip("\n")
@@ -506,6 +526,7 @@ for (bibLineNumber, bibLine) in enumerate(fIn):
 
     else:
         handleEntryLine(bibLineNumber, bibLine)
+
 
 fIn.close()
 
