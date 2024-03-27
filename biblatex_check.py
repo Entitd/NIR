@@ -369,6 +369,7 @@ def handleEntryEnding(lineNumber, line):
     if entryId in usedIds or (entryId and not usedIds):
         if countHyphenation == 1 and privet == 0:
             entryProblems.append("отсутствует поле hyphenation")
+            countHyphenation -= 1
             counterMissingFields += 1
         entryProblemsHTML = generateEntryProblemsHTML(
             entryHTML,
